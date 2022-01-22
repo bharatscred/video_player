@@ -11,18 +11,25 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late VideoPlayerController videoController;
   Duration currentVideoPosition = Duration.zero;
-  int currentIndex = 0;
-  // List<int> timeStamps = []
+  int _currentIndex = 0;
+  final List<int> _timeStampsInSec = [5, 10];
 
   void _updateIndex() {
-    if (currentIndex < 2) {
+    _currentIndex += 1;
+  }
 
+  void _changeVideoRange() {
+    if (_currentIndex < 2) {
+      videoController.seekTo(Duration(seconds: _timeStampsInSec[_currentIndex]));
+      videoController.play();
+      _updateIndex();
     }
   }
 
   Future<void> _loopVideo(
       {required VideoPlayerController controller, required int endTimeInSec}) async {
-    if (controller.value.position.inMilliseconds <= (endTimeInSec-1) * 1000 && controller.value.position.inMilliseconds < endTimeInSec * 1000) {
+    if (controller.value.position.inMilliseconds >= (endTimeInSec - 0.40) * 1000 &&
+        controller.value.position.inMilliseconds < endTimeInSec * 1000) {
       controller.seekTo(controller.value.position - const Duration(milliseconds: 1500));
       controller.pause();
       await Future.delayed(Duration.zero);
@@ -95,7 +102,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                     IconButton(
                       onPressed: () {
-                        // videoController.play();
+                        _changeVideoRange();
                       },
                       icon: const Icon(Icons.arrow_forward_rounded),
                     ),
