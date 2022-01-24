@@ -13,41 +13,45 @@ class _HomePageState extends State<HomePage> {
   late Future<void> _initializeVideoPlayerFuture;
   Duration currentVideoPosition = Duration.zero;
   int _currentIndex = 0;
-  final List<int> _timeStampsInSec = [5, 10];
+  final List<int> _timeStampsInSec = [5, 10, 15]; // Ending time in sec of each part
+  var _listenToVidController = true;
 
   void _updateIndex() {
     _currentIndex += 1;
   }
 
+  Future<void> _seekVideoTo(Duration position) async {
+    _videoController.seekTo(position);
+    _videoController.play();
+  }
+
   void _changeVideoRange() {
     if (_currentIndex < 2) {
-      _videoController.seekTo(Duration(seconds: _timeStampsInSec[_currentIndex]));
-      _videoController.play();
+      _seekVideoTo(Duration(seconds: _timeStampsInSec[_currentIndex]));
       _updateIndex();
     }
   }
 
-  Future<void> _loopVideo(
-      {required VideoPlayerController controller, required int endTimeInSec}) async {
-    if (controller.value.position.inMilliseconds >= (endTimeInSec - 0.5) * 1000 &&
-        controller.value.position.inMilliseconds < endTimeInSec * 1000) {
-      controller.seekTo(Duration(seconds: endTimeInSec-1));
-      controller.pause();
-      await Future.delayed(Duration.zero);
-      controller.play();
+  void _loopVideoAtPartEnd() async {
+    int endTimeInSec = _timeStampsInSec[_currentIndex];
+    if (_videoController.value.position.inMilliseconds >= (endTimeInSec - 0.4) * 1000 &&
+        _videoController.value.position.inMilliseconds < endTimeInSec * 1000) {
+      // print('--------------->>>>>stopper: ${_videoController.value.position.inMilliseconds}');
+      _listenToVidController = false;
+      _seekVideoTo(Duration(seconds: endTimeInSec-1)).then((_) => _listenToVidController = true);
     }
   }
 
   @override
   void initState() {
     super.initState();
-    _videoController = VideoPlayerController.asset('assets/video.mp4');
+    _videoController = VideoPlayerController.network('https://github.com/bharatscred/video_player/blob/02d3c7578c20a10f5449c527926ad7590217707e/assets/video.mp4?raw=true');
     _initializeVideoPlayerFuture = _videoController.initialize();
 
     _videoController.addListener(() {
-      _loopVideo(controller: _videoController, endTimeInSec: 5);
-      _loopVideo(controller: _videoController, endTimeInSec: 10);
-      _loopVideo(controller: _videoController, endTimeInSec: 15);
+      if (!_listenToVidController) return;
+      // print('addListener: ${_videoController.value.position.inMilliseconds}');
+      _loopVideoAtPartEnd();
     });
   }
 
@@ -78,7 +82,9 @@ class _HomePageState extends State<HomePage> {
                       flex: 4,
                       child: AspectRatio(
                         aspectRatio: _videoController.value.aspectRatio,
-                        child: VideoPlayer(_videoController),
+                        child: VideoPlayer(
+                          _videoController,
+                        ),
                       ),
                     ),
                     Expanded(
